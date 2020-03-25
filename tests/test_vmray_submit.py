@@ -71,10 +71,7 @@ def test_handler_capitalize_strings(monkeypatch):
 
 def test_successful_submission(monkeypatch, requests_mock):
     monkeypatch.setattr(vmray_submit, "vmrayProcess", mock.Mock())
-    analyzer_answer = None
-    with open("build/submit_new.json") as sub_return:
-        json_data = json.load(sub_return)
-        requests_mock.post("http://localhost/rest/sample/submit", json={"data": {"errors": []}}, status_code=200)
+    requests_mock.post("http://localhost/rest/sample/submit", json={"data": {"errors": []}}, status_code=200)
     mock_q = {
         "attachment": "dGVzdHN0cmluZw==",
         "data": "dGVzdHN0cmluZw==",
@@ -153,3 +150,39 @@ def test_vmrayProcess_resubmit_submission():
     assert {'types': 'sha256', 'values': 'test_sha256_hash'} in result["results"]
     assert {'tags': 'workflow:state="incomplete"', 'types': 'text', 'values': 'VMRay Sample ID: 1'} in result["results"]
     assert {'types': 'link', 'values': 'https://analyzer.url/'} in result["results"]
+
+
+def test_handler_full_resubmit(monkeypatch, requests_mock):
+    monkeypatch.setattr(vmray_submit, "vmrayProcess", mock.Mock())
+    json_data = {"data": {
+        "errors": [{
+            "error_msg": "Submission not stored because no jobs were created",
+            "submission_filename": "unittest.exe"
+        }],
+        "jobs": [],
+        "md_jobs": [],
+        "reputation_jobs": [],
+        "samples": [{
+            "sample_md5hash": "test_md5_hash",
+            "sample_sha1hash": "test_sha1_hash",
+            "sample_sha256hash": "test_sha256_hash",
+            "sample_id": 1,
+            "sample_webif_url": "https://analyzer.url/",
+        }]
+    }}
+    requests_mock.post("http://localhost/rest/sample/submit", json=json_data, status_code=200)
+    mock_q = {
+        "attachment": "dGVzdHN0cmluZw==",
+        "data": "dGVzdHN0cmluZw==",
+        "config": {
+            "apikey": "1234",
+            "url": "http://localhost",
+            "shareable": "true",
+            "do_not_reanalyze": "trUe",
+            "do_not_include_vmrayjobids": "False"
+        }
+    }
+
+    result = vmray_submit.handler(json.dumps(mock_q))
+
+    assert isinstance(result, mock.Mock)

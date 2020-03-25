@@ -88,7 +88,7 @@ def handler(q=False):
 
         try:
             vmraydata = vmraySubmit(api, args)
-            if vmraydata["errors"]:
+            if vmraydata["errors"] and "Submission not stored" not in vmraydata["errors"][0]["error_msg"]:
                 misperrors['error'] = "VMRay: %s" % vmraydata["errors"][0]["error_msg"]
                 return misperrors
             else:
